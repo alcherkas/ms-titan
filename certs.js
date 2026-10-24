@@ -26,9 +26,9 @@ window.CERTS = [
   {
     id: "ai-103",
     code: "AI-103",
-    title: "",
+    title: "Developing AI Apps and Agents on Azure",
     vendor: "Microsoft",
-    status: "planned",
-    description: ""
+    status: "available",
+    description: "Practice questions on Microsoft Foundry models and agents, RAG, responsible AI, vision, text and speech, and information extraction."
   }
 ];
