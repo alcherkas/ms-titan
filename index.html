@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cert Prep Hub</title>
+<meta name="description" content="Practice questions for technical certification exams.">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --text: #1c1c1a;
+    --muted: #6b6b66;
+    --border: #e3e3de;
+    --accent: #2f6f4f;
+    --accent-soft: #e4f0e9;
+    --planned: #8a8a84;
+    --planned-soft: #efefec;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615;
+      --surface: #1f1f1d;
+      --text: #ececE8;
+      --muted: #9a9a94;
+      --border: #33332f;
+      --accent: #6fbf94;
+      --accent-soft: #1f3529;
+      --planned: #8a8a84;
+      --planned-soft: #2a2a27;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161615;
+    --surface: #1f1f1d;
+    --text: #ececE8;
+    --muted: #9a9a94;
+    --border: #33332f;
+    --accent: #6fbf94;
+    --accent-soft: #1f3529;
+    --planned: #8a8a84;
+    --planned-soft: #2a2a27;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 16px 64px; }
+  header { margin-bottom: 32px; }
+  h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 24px 0 20px; }
+  .toolbar input {
+    flex: 1 1 220px; min-width: 0;
+    padding: 9px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font: inherit;
+  }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filters button {
+    padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+    font: inherit; font-size: 0.9rem;
+  }
+  .filters button[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 20px; border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--border);
+    color: inherit; text-decoration: none;
+    transition: border-color .15s, transform .15s;
+  }
+  a.card:hover, a.card:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+  .card.planned { opacity: .75; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .code { font-weight: 700; font-size: 1.15rem; letter-spacing: .02em; }
+  .vendor { color: var(--muted); font-size: .85rem; }
+  .title { font-weight: 600; }
+  .desc { color: var(--muted); font-size: .92rem; margin: 0; flex: 1; }
+  .badge {
+    font-size: .75rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.available { background: var(--accent-soft); color: var(--accent); }
+  .badge.planned { background: var(--planned-soft); color: var(--planned); }
+
+  .progress { margin-top: 4px; }
+  .progress-bar { height: 6px; border-radius: 3px; background: var(--planned-soft); overflow: hidden; }
+  .progress-bar span { display: block; height: 100%; background: var(--accent); }
+  .progress small { color: var(--muted); font-size: .8rem; }
+
+  .empty { color: var(--muted); padding: 32px 0; text-align: center; }
+  footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cert Prep Hub</h1>
+    <p>Practice questions for certification exams. Pick an exam to start.</p>
+  </header>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Search by code, name or vendor" aria-label="Search certifications">
+    <div class="filters" role="group" aria-label="Filter by status">
+      <button data-filter="all" aria-pressed="true">All</button>
+      <button data-filter="available" aria-pressed="false">Available</button>
+      <button data-filter="planned" aria-pressed="false">Coming soon</button>
+    </div>
+  </div>
+
+  <div id="grid" class="grid" aria-live="polite"></div>
+
+  <footer>Progress is saved in this browser only.</footer>
+</main>
+
+<script src="certs.js"></script>
+<script>
+  const certs = (window.CERTS || []).slice().sort((a, b) => a.code.localeCompare(b.code));
+  const grid = document.getElementById("grid");
+  const search = document.getElementById("search");
+  let filter = "all";
+
+  function readProgress(id) {
+    try {
+      const p = JSON.parse(localStorage.getItem("certs:" + id));
+      if (p && p.total > 0) return p;
+    } catch (_) {}
+    return null;
+  }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text) n.textContent = text;
+    return n;
+  }
+
+  function card(c) {
+    const available = c.status === "available";
+    const node = el(available ? "a" : "div", "card" + (available ? "" : " planned"));
+    if (available) node.href = c.id + "/";
+
+    const top = el("div", "card-top");
+    top.append(el("span", "code", c.code));
+    top.append(el("span", "badge " + (available ? "available" : "planned"), available ? "Available" : "Coming soon"));
+    node.append(top);
+
+    if (c.vendor) node.append(el("span", "vendor", c.vendor));
+    if (c.title) node.append(el("span", "title", c.title));
+    if (c.description) node.append(el("p", "desc", c.description));
+
+    const p = available && readProgress(c.id);
+    if (p) {
+      const pct = Math.round((p.answered / p.total) * 100);
+      const wrap = el("div", "progress");
+      const bar = el("div", "progress-bar");
+      const fill = el("span");
+      fill.style.width = pct + "%";
+      bar.append(fill);
+      wrap.append(bar);
+      wrap.append(el("small", null, `${p.answered}/${p.total} answered · ${p.correct} correct`));
+      node.append(wrap);
+    }
+    return node;
+  }
+
+  function render() {
+    const q = search.value.trim().toLowerCase();
+    const shown = certs.filter(c =>
+      (filter === "all" || c.status === filter) &&
+      (!q || [c.code, c.title, c.vendor, c.description].join(" ").toLowerCase().includes(q))
+    );
+    grid.replaceChildren(...shown.map(card));
+    if (!shown.length) grid.append(el("p", "empty", "No certifications match."));
+  }
+
+  search.addEventListener("input", render);
+  document.querySelectorAll(".filters button").forEach(b => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll(".filters button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+  render();
+</script>
+</body>
+</html>
