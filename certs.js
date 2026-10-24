@@ -18,10 +18,10 @@ window.CERTS = [
   {
     id: "ab-100",
     code: "AB-100",
-    title: "",
+    title: "Agentic AI Business Solutions Architect",
     vendor: "Microsoft",
-    status: "planned",
-    description: ""
+    status: "available",
+    description: "Practice questions on AI strategy and ROI, Copilot Studio and Foundry agent design, Dynamics 365 AI features, ALM, monitoring and responsible AI."
   },
   {
     id: "ai-103",
